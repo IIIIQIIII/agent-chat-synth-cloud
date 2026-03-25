@@ -11,10 +11,13 @@ Generate realistic multi-turn coding conversations using LLM role-play for train
 git clone https://github.com/IIIIQIIII/agent-chat-synth-cloud.git
 cd agent-chat-synth-cloud
 
-# Install dependencies
-pip install openai
+# Install uv (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Configure API keys
+# Sync dependencies
+uv sync
+
+# Configure API keys (copy .env.example to .env and edit)
 cp .env.example .env
 # Edit .env and fill in your 4 Aliyun API keys
 ```
@@ -38,20 +41,30 @@ export MAX_TURNS=10
 #### Small Scale Test (5 topics)
 
 ```bash
-python generate_conversations.py --pilot 5
+uv run python generate_conversations.py --pilot 5
 ```
 
-#### Full Scale (826 topics with 4 parallel shards)
+#### Single Round (826 conversations)
 
 ```bash
 # Run in 4 separate terminals or use screen/tmux
-python generate_conversations.py --shard 0 > shard0.log 2>&1 &
-python generate_conversations.py --shard 1 > shard1.log 2>&1 &
-python generate_conversations.py --shard 2 > shard2.log 2>&1 &
-python generate_conversations.py --shard 3 > shard3.log 2>&1 &
+uv run python generate_conversations.py --shard 0 > shard0.log 2>&1 &
+uv run python generate_conversations.py --shard 1 > shard1.log 2>&1 &
+uv run python generate_conversations.py --shard 2 > shard2.log 2>&1 &
+uv run python generate_conversations.py --shard 3 > shard3.log 2>&1 &
 
 # Monitor progress
 tail -f shard*.log
+```
+
+#### Large Scale (8,260 conversations = 826 topics × 10 rounds)
+
+```bash
+# Automatic 10-round generation
+uv run python generate_8k_conversations.py
+
+# Or custom rounds (e.g., 5 rounds = 4,130 conversations)
+uv run python generate_8k_conversations.py --rounds 5
 ```
 
 #### Merge Results
@@ -76,11 +89,18 @@ python analyze_conversations.py outputs/conversations_all.jsonl
 
 ## 🎯 Expected Output
 
+### Single Round (826 conversations)
 - **826 conversations** (1 per topic)
 - **~6,700 turns** total (avg 8.1 turns per conversation)
 - **99% natural endings** ("thanks", "works", etc.)
 - **99% code examples** (realistic code blocks)
-- **~6-8 hours** total runtime (with concurrency=5, 4 accounts)
+- **~1 hour** runtime (with concurrency=5, 4 accounts)
+
+### 10 Rounds (8,260 conversations)
+- **8,260 conversations** (826 topics × 10 rounds)
+- **~67,000 turns** total
+- Each topic gets 10 different conversations for diversity
+- **~10 hours** total runtime
 
 ## ⚙️ Configuration
 
